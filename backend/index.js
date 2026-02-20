@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
+// Load environment variables from .env when present (local development)
+require('dotenv').config();
 
 
 const app = express();
@@ -15,15 +17,20 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow non-browser requests (no Origin header)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      return callback(null, true);
+    try {
+      const lower = origin.toLowerCase();
+      const isAllowed = allowedOrigins.includes(origin) || allowedOrigins.includes(lower) || /\.vercel\.app$/.test(lower) || (process.env.CLIENT_URL && lower === process.env.CLIENT_URL.toLowerCase());
+      if (isAllowed) return callback(null, true);
+      return callback(new Error(`CORS blocked: ${origin}`));
+    } catch (e) {
+      return callback(new Error(`CORS origin check failed`));
     }
-    return callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization']
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-Username','x-username','Origin']
 }));
 // Avoid using '*' path with app.options because some path-to-regexp versions
 // treat '*' as a parameterized wildcard and can throw. Use a generic options
@@ -36,12 +43,24 @@ app.use(bodyParser.json());
 
 // MongoDB connection - use environment variable
 // Required env: MONGODB_URI
+if (!process.env.MONGODB_URI) {
+  console.error('\nERROR: MONGODB_URI is not set.');
+  console.error('Set MONGODB_URI in your environment or create a .env file in the backend folder with:');
+  console.error('MONGODB_URI="mongodb+srv://<user>:<pass>@cluster0.mongodb.net/dbname?retryWrites=true&w=majority"\n');
+  // Exit to avoid running the server without a database connection
+  process.exit(1);
+}
+
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
   .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+    // If connection fails, exit to let deploy/platform know
+    process.exit(1);
+  });
 
 // User model
 const User = require('./User');
@@ -337,9 +356,12 @@ app.get('/', (req, res) => {
 
 app.use('/api', favoritesRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Only start listening when this file is run directly (not when required by serverless)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 // Export app for serverless platforms or testing
 module.exports = app;
