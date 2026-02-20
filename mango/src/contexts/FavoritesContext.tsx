@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '@/api/client';
 
 interface Recipe {
   id: number;
@@ -27,14 +28,15 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const username = localStorage.getItem('username');
     if (!username) return;
-    fetch('/api/favorites', { headers: { 'x-username': username } })
-      .then(res => res.json())
-      .then(data => {
+    api.get('/api/favorites', { headers: { 'x-username': username } })
+      .then(res => {
+        const data = res.data;
         if (Array.isArray(data)) {
           setFavorites(data);
           localStorage.setItem('favorites', JSON.stringify(data));
         }
-      });
+      })
+      .catch(() => {});
   }, []);
 
   const addToFavorites = (recipe: Recipe) => {
@@ -45,11 +47,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Save to backend
       const username = localStorage.getItem('username');
       if (username) {
-        fetch('/api/favorites', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, recipe })
-        });
+        api.post('/api/favorites', { username, recipe }).catch(() => {});
       }
       return [...prev, recipe];
     });
@@ -60,11 +58,7 @@ export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Remove from backend
     const username = localStorage.getItem('username');
     if (username) {
-      fetch('/api/favorites', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, recipeId })
-      });
+      api.delete('/api/favorites', { data: { username, recipeId } }).catch(() => {});
     }
   };
 

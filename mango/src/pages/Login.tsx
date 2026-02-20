@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import api from "@/api/client";
 import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
@@ -16,23 +17,20 @@ const Login = () => {
     e.preventDefault();
     setError("");
     try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const res = await api.post(`/api/login`, { username, password });
+      const data = res.data;
+      if (res.status >= 200 && res.status < 300) {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("username", username); // Store username for meal API
         // Fetch and cache favorites after login
-        fetch("/api/favorites", { headers: { "x-username": username } })
-          .then(res => res.json())
-          .then(data => {
-            if (Array.isArray(data)) {
-              localStorage.setItem("favorites", JSON.stringify(data));
-            }
-          });
+        try {
+          const favRes = await api.get(`/api/favorites`, { headers: { "x-username": username } });
+          if (Array.isArray(favRes.data)) {
+            localStorage.setItem("favorites", JSON.stringify(favRes.data));
+          }
+        } catch (e) {
+          // ignore favorites load error
+        }
         navigate("/");
       } else {
         setError(data.message || "Login failed");

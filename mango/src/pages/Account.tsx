@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -15,35 +16,28 @@ const Account = () => {
     const fetchProfile = async () => {
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/profile", {
-        headers: { "x-username": username },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProfile(data);
-      }
+      try {
+        const res = await api.get("/api/profile", { headers: { "x-username": username } });
+        setProfile(res.data);
+      } catch {}
     };
     const fetchCreatedCount = async () => {
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/your-recipes", {
-        headers: { "x-username": username },
-      });
-      if (res.ok) {
-        const recipes = await res.json();
+      try {
+        const res = await api.get("/api/your-recipes", { headers: { "x-username": username } });
+        const recipes = res.data;
         setCreatedCount(Array.isArray(recipes) ? recipes.length : 0);
-      }
+      } catch {}
     };
     const fetchFavoritesCount = async () => {
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/favorites", {
-        headers: { "x-username": username },
-      });
-      if (res.ok) {
-        const favorites = await res.json();
+      try {
+        const res = await api.get("/api/favorites", { headers: { "x-username": username } });
+        const favorites = res.data;
         setFavoritesCount(Array.isArray(favorites) ? favorites.length : 0);
-      }
+      } catch {}
     };
     fetchProfile();
     fetchCreatedCount();

@@ -4,6 +4,7 @@ import Footer from "@/components/Footer";
 import { ShoppingCart } from "lucide-react";
 import { Printer } from "lucide-react";
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { Button } from "@/components/ui/button";
 import recipes from "./RecipeCollection";
 import { AnimatePresence, motion } from "framer-motion";
@@ -250,13 +251,12 @@ const Grocery = () => {
 		const fetchUserRecipes = async () => {
 			const username = localStorage.getItem("username");
 			if (!username) return;
-			const res = await fetch("/api/your-recipes", {
-				headers: { "x-username": username },
-			});
-			if (res.ok) {
-				const userRecipes = await res.json();
+			try {
+				const res = await api.get(`/api/your-recipes`, { headers: { "x-username": username } });
+				const userRecipes = res.data;
 				// Map user recipes to match static recipe structure
-				const mapped = userRecipes.map((r: any, idx: number) => ({
+				const mapped = Array.isArray(userRecipes)
+					? userRecipes.map((r: any, idx: number) => ({
 					id: 1000 + idx, // avoid id collision
 					title: r.title,
 					description: r.description,
@@ -265,8 +265,11 @@ const Grocery = () => {
 					rating: r.rating,
 					image: r.image || "/placeholder.svg",
 					ingredients: r.ingredients || [],
-				}));
+				}))
+					: [];
 				setRecipes([...staticRecipes, ...mapped]);
+			} catch (e) {
+				// ignore
 			}
 		};
 		fetchUserRecipes();

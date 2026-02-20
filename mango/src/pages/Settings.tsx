@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { useTheme } from "@/components/ui/theme-provider";
@@ -64,16 +65,14 @@ const Settings = () => {
     const fetchProfile = async () => {
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/profile", {
-        headers: { "x-username": username },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      try {
+        const res = await api.get("/api/profile", { headers: { "x-username": username } });
+        const data = res.data;
         setProfile(data);
         setBio(data.bio || "");
         setRole(data.role || "Home Chef");
         setCountry(data.country || "");
-      }
+      } catch {}
     };
     fetchProfile();
   }, []);
@@ -84,17 +83,17 @@ const Settings = () => {
     setSuccess("");
     const username = localStorage.getItem("username");
     if (!username) return;
-    const res = await fetch("/api/profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-username": username },
-      body: JSON.stringify({ bio, role, country }),
-    });
-    setSaving(false);
-    if (res.ok) {
-      setSuccess("Profile updated!");
-      localStorage.setItem("role", role); // Store role for sidebar/mobile
-      // Dispatch custom event to notify sidebar and others
-      window.dispatchEvent(new Event("profile-updated"));
+    try {
+      const res = await api.post("/api/profile", { bio, role, country }, { headers: { "Content-Type": "application/json", "x-username": username } });
+      setSaving(false);
+      if (res.status >= 200 && res.status < 300) {
+        setSuccess("Profile updated!");
+        localStorage.setItem("role", role); // Store role for sidebar/mobile
+        // Dispatch custom event to notify sidebar and others
+        window.dispatchEvent(new Event("profile-updated"));
+      }
+    } catch (err) {
+      setSaving(false);
     }
   };
 
@@ -218,15 +217,16 @@ const Settings = () => {
                           <AlertDialogAction asChild>
                             <Button variant="destructive" onClick={async () => {
                               const username = localStorage.getItem("username");
-                              const res = await fetch("/api/delete-account", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json", "x-username": username },
-                              });
-                              if (res.ok) {
-                                localStorage.removeItem("isLoggedIn");
-                                localStorage.removeItem("username");
-                                window.location.href = "/login";
-                              } else {
+                              try {
+                                const res = await api.post("/api/delete-account", {}, { headers: { "Content-Type": "application/json", "x-username": username } });
+                                if (res.status >= 200 && res.status < 300) {
+                                  localStorage.removeItem("isLoggedIn");
+                                  localStorage.removeItem("username");
+                                  window.location.href = "/login";
+                                } else {
+                                  alert("Failed to delete account.");
+                                }
+                              } catch {
                                 alert("Failed to delete account.");
                               }
                             }}>Delete</Button>

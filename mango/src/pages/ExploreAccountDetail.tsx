@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 
@@ -16,28 +17,28 @@ const ExploreAccountDetail = () => {
     const fetchProfileAndRecipes = async () => {
       setLoading(true);
       const loggedInUsername = localStorage.getItem("username");
-      if (username === loggedInUsername) {
-        // Use the logged-in user's own info endpoints
-        const resProfile = await fetch("/api/profile", { headers: { "x-username": loggedInUsername! } });
-        const resRecipes = await fetch("/api/your-recipes", { headers: { "x-username": loggedInUsername! } });
-        let profileData = null;
-        let recipesData = [];
-        if (resProfile.ok) profileData = await resProfile.json();
-        if (resRecipes.ok) recipesData = await resRecipes.json();
-        setProfile(profileData);
-        setRecipes(recipesData);
-        setLoading(false);
-        return;
+      try {
+        if (username === loggedInUsername) {
+          // Use the logged-in user's own info endpoints
+          const [resProfile, resRecipes] = await Promise.all([
+            api.get(`/api/profile`, { headers: { "x-username": loggedInUsername! } }),
+            api.get(`/api/your-recipes`, { headers: { "x-username": loggedInUsername! } }),
+          ]);
+          setProfile(resProfile.data);
+          setRecipes(Array.isArray(resRecipes.data) ? resRecipes.data : []);
+          setLoading(false);
+          return;
+        }
+        // Otherwise, fetch public info
+        const [resProfile, resRecipes] = await Promise.all([
+          api.get(`/api/public-profile`, { params: { username } }),
+          api.get(`/api/recipes-by-user`, { params: { username } }),
+        ]);
+        setProfile(resProfile.data);
+        setRecipes(Array.isArray(resRecipes.data) ? resRecipes.data : []);
+      } catch (e) {
+        // ignore
       }
-      // Otherwise, fetch public info
-      const resProfile = await fetch(`/api/public-profile?username=${username}`);
-      const resRecipes = await fetch(`/api/recipes-by-user?username=${username}`);
-      let profileData = null;
-      let recipesData = [];
-      if (resProfile.ok) profileData = await resProfile.json();
-      if (resRecipes.ok) recipesData = await resRecipes.json();
-      setProfile(profileData);
-      setRecipes(recipesData);
       setLoading(false);
     };
     fetchProfileAndRecipes();

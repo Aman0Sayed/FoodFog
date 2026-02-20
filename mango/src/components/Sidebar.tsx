@@ -2,6 +2,7 @@ import { Home, Calendar, BookOpen, Heart, Settings, Calculator } from "lucide-re
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 
 const navigation = [
 	{ name: "Home", icon: Home, path: "/" },
@@ -37,17 +38,18 @@ const Sidebar = () => {
 			// Always update role based on current username
 			if (currentUsername) {
 				// Try to fetch the latest profile from backend for this username
-				fetch("/api/profile", {
-					headers: { "x-username": currentUsername }
-				})
-					.then(res => res.ok ? res.json() : null)
-					.then(data => {
+				api.get("/api/profile", { headers: { "x-username": currentUsername } })
+					.then(res => {
+						const data = res.data;
 						if (data && data.role) {
 							setRole(data.role);
 							localStorage.setItem("role", data.role);
 						} else {
 							setRole(localStorage.getItem("role") || "");
 						}
+					})
+					.catch(() => {
+						setRole(localStorage.getItem("role") || "");
 					});
 			} else {
 				setRole("");

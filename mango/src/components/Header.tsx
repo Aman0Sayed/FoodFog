@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import api from "@/api/client";
 
 const Header = () => {
   const { theme, setTheme } = useTheme();
@@ -47,20 +48,25 @@ const Header = () => {
     let ignore = false;
     const fetchResults = async () => {
       // Fetch accounts
-      const accRes = await fetch("/api/all-users");
-      const accounts = accRes.ok ? await accRes.json() : [];
-      // Fetch all public recipes (simulate with static/demo data or add endpoint if needed)
-      let recipes = [];
+      let accounts: any[] = [];
       try {
-        const recRes = await fetch("/api/recipes-by-user?username=demo"); // fallback: fetch demo user's recipes
-        recipes = recRes.ok ? await recRes.json() : [];
+        const accRes = await api.get("/api/all-users");
+        accounts = Array.isArray(accRes.data) ? accRes.data : [];
+      } catch {}
+      // Fetch all public recipes (simulate with static/demo data or add endpoint if needed)
+      let recipes: any[] = [];
+      try {
+        const recRes = await api.get("/api/recipes-by-user", { params: { username: "demo" } }); // fallback: fetch demo user's recipes
+        recipes = Array.isArray(recRes.data) ? recRes.data : [];
       } catch {}
       // Fetch own recipes if logged in
-      let own = [];
+      let own: any[] = [];
       const username = localStorage.getItem("username");
       if (username) {
-        const ownRes = await fetch("/api/your-recipes", { headers: { "x-username": username } });
-        own = ownRes.ok ? await ownRes.json() : [];
+        try {
+          const ownRes = await api.get("/api/your-recipes", { headers: { "x-username": username } });
+          own = Array.isArray(ownRes.data) ? ownRes.data : [];
+        } catch {}
       }
       // Smarter filter: match if any word in the title matches the query (case-insensitive, partial)
       const q = search.toLowerCase().trim();

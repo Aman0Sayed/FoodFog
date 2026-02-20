@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
@@ -17,13 +18,10 @@ const YourRecipesList = () => {
       setLoading(true);
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/your-recipes", {
-        headers: { "x-username": username },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRecipes(data);
-      }
+      try {
+        const res = await api.get("/api/your-recipes", { headers: { "x-username": username } });
+        setRecipes(res.data || []);
+      } catch {}
       setLoading(false);
     };
     fetchRecipes();
@@ -84,10 +82,7 @@ const YourRecipesList = () => {
                         if (!window.confirm("Are you sure you want to delete this recipe?")) return;
                         const username = localStorage.getItem("username");
                         if (!username) return;
-                        await fetch(`/api/your-recipes/${recipe._id}`, {
-                          method: "DELETE",
-                          headers: { "x-username": username },
-                        });
+                        await api.delete(`/api/your-recipes/${recipe._id}`, { headers: { "x-username": username } }).catch(() => {});
                         setRecipes((prev) => prev.filter((r) => r._id !== recipe._id));
                       }}
                     >

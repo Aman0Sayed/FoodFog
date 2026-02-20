@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { Link } from "react-router-dom";
 import { Clock, Users, Star, Pencil } from "lucide-react";
 import Header from "@/components/Header";
@@ -21,13 +22,10 @@ const YourRecipes = () => {
       setLoading(true);
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/your-recipes", {
-        headers: { "x-username": username },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRecipes(data); // data is now from cr collection
-      }
+      try {
+        const res = await api.get("/api/your-recipes", { headers: { "x-username": username } });
+        setRecipes(res.data || []);
+      } catch {}
       setLoading(false);
     };
     fetchRecipes();
@@ -99,10 +97,7 @@ const YourRecipes = () => {
                         if (!window.confirm("Are you sure you want to delete this recipe?")) return;
                         const username = localStorage.getItem("username");
                         if (!username) return;
-                        await fetch(`/api/your-recipes/${recipe._id}`, {
-                          method: "DELETE",
-                          headers: { "x-username": username },
-                        });
+                        await api.delete(`/api/your-recipes/${recipe._id}`, { headers: { "x-username": username } }).catch(() => {});
                         setRecipes((prev) => prev.filter((r) => r._id !== recipe._id));
                       }}
                     >
@@ -124,16 +119,12 @@ const YourRecipes = () => {
                       e.preventDefault();
                       const username = localStorage.getItem("username");
                       if (!username) return;
-                      const res = await fetch(`/api/your-recipes/${editingRecipe._id}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json", "x-username": username },
-                        body: JSON.stringify(editForm),
-                      });
-                      if (res.ok) {
-                        const updated = await res.json();
+                      try {
+                        const res = await api.put(`/api/your-recipes/${editingRecipe._id}`, editForm, { headers: { "Content-Type": "application/json", "x-username": username } });
+                        const updated = res.data;
                         setRecipes((prev) => prev.map(r => r._id === updated._id ? updated : r));
                         setEditingRecipe(null);
-                      } else {
+                      } catch {
                         alert("Failed to update recipe.");
                       }
                     }}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
@@ -18,20 +19,18 @@ const YourRecipeDetail = () => {
       const username = localStorage.getItem("username");
       let found = null;
       if (username && id) {
-        const res = await fetch("/api/your-recipes", {
-          headers: { "x-username": username },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          found = data.find((r: any) => r._id === id);
-        }
+        try {
+          const res = await api.get("/api/your-recipes", { headers: { "x-username": username } });
+          const data = res.data || [];
+          found = (data as any[]).find((r: any) => r._id === id);
+        } catch {}
       }
       if (!found && id) {
         // Try to fetch any recipe by id (public)
-        const res = await fetch(`/api/recipe/${id}`);
-        if (res.ok) {
-          found = await res.json();
-        }
+        try {
+          const res = await api.get(`/api/recipe/${id}`);
+          found = res.data;
+        } catch {}
       }
       setRecipe(found);
       setLoading(false);

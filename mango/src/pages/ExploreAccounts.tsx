@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import Footer from "@/components/Footer";
 import { useEffect, useState } from "react";
+import api from "@/api/client";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 
@@ -13,11 +14,13 @@ const ExploreAccounts = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       setLoading(true);
-      const res = await fetch("/api/all-users");
-      if (res.ok) {
-        const data = await res.json();
+      try {
+        const res = await api.get(`/api/all-users`);
+        const data = res.data;
         const username = localStorage.getItem("username");
-        setAccounts(data.filter((user: any) => user.username !== username));
+        setAccounts(Array.isArray(data) ? data.filter((user: any) => user.username !== username) : []);
+      } catch (e) {
+        // ignore
       }
       setLoading(false);
     };

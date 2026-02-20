@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import AddMealDialog, { recipes as staticRecipes } from "@/components/AddMealDialog";
 import { Calendar, Clock, Users, ChefHat, X, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import api from "@/api/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -87,18 +88,16 @@ const MealPlanning = () => {
     // Fetch meals for the logged-in user from backend
     const username = localStorage.getItem("username");
     if (!username) return;
-    fetch("/api/meals", {
-      headers: { "x-username": username }
-    })
-      .then(res => res.json())
-      .then(data => {
-        // Convert array of meals to { key: recipe } format
+    api.get("/api/meals", { headers: { "x-username": username } })
+      .then(res => {
+        const data = res.data || [];
         const loadedMeals: Record<string, any> = {};
-        data.forEach((meal: any) => {
+        (data as any[]).forEach((meal: any) => {
           loadedMeals[`${meal.day}-${meal.mealType}`] = meal.recipe;
         });
         setMeals(loadedMeals);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   // Save meals to backend whenever meals state changes, with debounce and notification
@@ -112,15 +111,11 @@ const MealPlanning = () => {
         await Promise.all(
           Object.entries(meals).map(([key, recipe]) => {
             const [day, mealType] = key.split("-");
-            return fetch("/api/meals", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-username": username
-              },
-              body: JSON.stringify({ day, mealType, recipe }),
-              signal: controller.signal
-            });
+            return api.post(
+              "/api/meals",
+              { day, mealType, recipe },
+              { headers: { "Content-Type": "application/json", "x-username": username }, signal: controller.signal }
+            );
           })
         );
         toast({
@@ -156,14 +151,7 @@ const MealPlanning = () => {
     // Remove from DB
     const username = localStorage.getItem("username");
     if (username) {
-      fetch("/api/meals", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-username": username
-        },
-        body: JSON.stringify({ day, mealType })
-      });
+      api.delete("/api/meals", { data: { day, mealType }, headers: { "Content-Type": "application/json", "x-username": username } }).catch(() => {});
     }
   };
 

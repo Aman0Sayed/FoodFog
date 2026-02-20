@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import api from "@/api/client";
 import { Eye, EyeOff } from "lucide-react";
 
 const Register = () => {
@@ -18,17 +19,12 @@ const Register = () => {
     setError("");
     setSuccess("");
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const res = await api.post("/api/register", { username, password });
+      if (res.status >= 200 && res.status < 300) {
         setSuccess("Account created! You can now log in.");
         setTimeout(() => navigate("/login"), 1500);
       } else {
-        setError(data.message || "Registration failed");
+        setError((res.data && res.data.message) || "Registration failed");
       }
     } catch {
       setError("Network error");

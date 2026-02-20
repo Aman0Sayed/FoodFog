@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import api from "@/api/client";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 const AddRecipe = () => {
@@ -75,10 +76,8 @@ const AddRecipe = () => {
       // Save to user recipes
       const username = localStorage.getItem("username");
       if (!username) return;
-      const res = await fetch("/api/your-recipes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-username": username },
-        body: JSON.stringify({
+      try {
+        const payload = {
           title,
           description,
           image,
@@ -96,15 +95,19 @@ const AddRecipe = () => {
             sodium: sodium || ""
           },
           instructions: instructions.filter((i) => i && i.trim()),
-        }),
-      });
-      setLoading(false);
-      if (res.ok) {
-        setTitle("");
-        setDescription("");
-        setSuccess("Recipe added!");
-        toast({ title: "Recipe Added!", description: "Your recipe has been added to your account." });
-        setTimeout(() => navigate("/your-recipes"), 1000);
+        };
+        const res = await api.post("/api/your-recipes", payload, { headers: { "x-username": username } });
+        setLoading(false);
+        if (res.status >= 200 && res.status < 300) {
+          setTitle("");
+          setDescription("");
+          setSuccess("Recipe added!");
+          toast({ title: "Recipe Added!", description: "Your recipe has been added to your account." });
+          setTimeout(() => navigate("/your-recipes"), 1000);
+        }
+      } catch (err) {
+        setLoading(false);
+        toast({ title: "Error", description: "Failed to add recipe." });
       }
     } else {
       // ...existing code for public recipes...
