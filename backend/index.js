@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -24,9 +25,14 @@ app.use(cors({
   methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
-app.options('*', cors());
+// Avoid using '*' path with app.options because some path-to-regexp versions
+// treat '*' as a parameterized wildcard and can throw. Use a generic options
+// handler instead which will be covered by the CORS middleware above.
+// Register a regex-based preflight handler to avoid string parsing issues
+app.options(/.*/, cors());
 
 app.use(bodyParser.json());
+
 
 // MongoDB connection - use environment variable
 // Required env: MONGODB_URI
@@ -44,6 +50,8 @@ const Meal = require('./Meal');
 // UserRecipe model
 const UserRecipe = require('./UserRecipe'); // NEW: user-created recipes collection
 const favoritesRouter = require('./favorites');
+
+// startup
 
 // Register route
 app.post('/api/register', async (req, res) => {
