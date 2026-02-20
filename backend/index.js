@@ -335,3 +335,12 @@ app.listen(PORT, () => {
 
 // Export app for serverless platforms or testing
 module.exports = app;
+
+// Global error handlers to capture unexpected crashes and log stack traces
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err && err.stack ? err.stack : err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+});
