@@ -7,17 +7,34 @@ const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// Configure CORS for Vercel and local development
+const allowedOrigins = [
+  'https://food-fog.vercel.app',
+  'http://localhost:5173',
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization']
+}));
+app.options('*', cors());
+
 app.use(bodyParser.json());
 
-// MongoDB connection
-const mongoURI = 'mongodb+srv://backend:12345@inter.mgnp44y.mongodb.net/test?retryWrites=true&w=majority&appName=Inter';
-
-mongoose.connect(mongoURI, {
+// MongoDB connection - use environment variable
+// Required env: MONGODB_URI
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log('MongoDB connected to test database'))
+  .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // User model
@@ -307,7 +324,7 @@ app.get('/api/recipe/:id', async (req, res) => {
 
 // Example route
 app.get('/', (req, res) => {
-  res.send('Backend is running and connected to MongoDB!');
+  res.send('API Running');
 });
 
 app.use('/api', favoritesRouter);
@@ -315,3 +332,6 @@ app.use('/api', favoritesRouter);
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Export app for serverless platforms or testing
+module.exports = app;
