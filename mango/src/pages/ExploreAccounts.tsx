@@ -17,8 +17,29 @@ const ExploreAccounts = () => {
       try {
         const res = await api.get(`/api/all-users`);
         const data = res.data;
-        const username = localStorage.getItem("username");
-        setAccounts(Array.isArray(data) ? data.filter((user: any) => user.username !== username) : []);
+        // Determine current username robustly: prefer explicit username, fallback to cached profile
+        let currentUsername = localStorage.getItem("username") || null;
+        try {
+          if (!currentUsername) {
+            const cached = localStorage.getItem('profile');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              currentUsername = parsed?.username || null;
+            }
+          }
+        } catch (e) {
+          currentUsername = currentUsername;
+        }
+        const cur = (currentUsername && String(currentUsername).trim().toLowerCase()) || null;
+        setAccounts(
+          Array.isArray(data)
+            ? data.filter((user: any) => {
+                const u = (user?.username && String(user.username).trim().toLowerCase()) || null;
+                // exclude current user by username match; if no current, show all
+                return cur ? u !== cur : true;
+              })
+            : []
+        );
       } catch (e) {
         // ignore
       }
