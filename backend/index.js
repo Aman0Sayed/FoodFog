@@ -27,18 +27,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
-  // Allow custom headers used by the frontend (case-insensitive)
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'X-Username',
-    'x-username',
-    'Origin',
-    'Accept'
-  ],
-  // Expose headers if frontend needs to read them
-  exposedHeaders: ['Content-Length', 'X-Kuma-Revision']
+  allowedHeaders: ['Content-Type','Authorization']
 };
 
 app.use(cors(corsOptions));

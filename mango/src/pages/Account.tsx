@@ -13,21 +13,12 @@ const Account = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load cached profile from localStorage first so UI can show immediately
-    const cached = localStorage.getItem('profile');
-    if (cached) {
-      try {
-        setProfile(JSON.parse(cached));
-      } catch {}
-    }
     const fetchProfile = async () => {
       const username = localStorage.getItem("username");
       if (!username) return;
       try {
         const res = await api.get("/api/profile", { headers: { "x-username": username } });
         setProfile(res.data);
-        // update cached profile
-        try { localStorage.setItem('profile', JSON.stringify(res.data)); } catch {}
       } catch {}
     };
     const fetchCreatedCount = async () => {
