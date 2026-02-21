@@ -22,6 +22,15 @@ const Login = () => {
       if (res.status >= 200 && res.status < 300) {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("username", username); // Store username for meal API
+        // Fetch and cache profile after login so Account page can show immediately
+        try {
+          const profileRes = await api.get(`/api/profile`, { headers: { "x-username": username } });
+          if (profileRes && profileRes.data) {
+            localStorage.setItem('profile', JSON.stringify(profileRes.data));
+          }
+        } catch (e) {
+          // ignore profile load error
+        }
         // Fetch and cache favorites after login
         try {
           const favRes = await api.get(`/api/favorites`, { headers: { "x-username": username } });
