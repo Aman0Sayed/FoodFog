@@ -12,31 +12,24 @@ const PORT = process.env.PORT || 5000;
 
 // Configure CORS for Vercel and local development
 const allowedOrigins = [
-  'https://food-fog.vercel.app',
+  'https://food-fog.vercel.app',        // ✅ add this
   'http://localhost:5173',
+  'http://localhost:3000',
 ];
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser requests (no Origin header)
     if (!origin) return callback(null, true);
-    try {
-      const lower = origin.toLowerCase();
-      const isAllowed = allowedOrigins.includes(origin) || allowedOrigins.includes(lower) || /\.vercel\.app$/.test(lower) || (process.env.CLIENT_URL && lower === process.env.CLIENT_URL.toLowerCase());
-      if (isAllowed) return callback(null, true);
-      return callback(new Error(`CORS blocked: ${origin}`));
-    } catch (e) {
-      return callback(new Error(`CORS origin check failed`));
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
     }
+    return callback(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
   methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-Username','x-username','Origin']
+  allowedHeaders: ['Content-Type','Authorization']
 }));
-// Avoid using '*' path with app.options because some path-to-regexp versions
-// treat '*' as a parameterized wildcard and can throw. Use a generic options
-// handler instead which will be covered by the CORS middleware above.
-// Register a regex-based preflight handler to avoid string parsing issues
-app.options(/.*/, cors());
+
+app.options('*', cors());
 
 app.use(bodyParser.json());
 
